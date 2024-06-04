@@ -1,0 +1,212 @@
+#include "dataset.h"
+
+Dataset::Dataset(Matrix _inputs, Matrix _targets, double _percentage)
+    : inputs { _inputs }
+    , targets { _targets }
+    , percentage { _percentage }
+{
+    std::cout << "Constructor Dataset " << std::endl;
+    std::cout << "Constructor Dataset " << std::endl;
+    // Train Inputs
+    size_t numSamples { inputs.getSize()[1] };
+    size_t numTrains = (numSamples * percentage) / 100.0;
+    std::vector<double> train_tmp;
+    // std::cout << numTrain;
+    // std::cout << "---------Input Datas--------" << std::endl;
+    // inputs.show();
+
+    for (size_t i {}; i < numTrains; i++) {
+        // std::cout << i << ": " << inputs[0][i] << std::endl;
+        train_tmp.push_back(inputs[0][i]);
+    }
+    std::vector<std::vector<double>> train_vec;
+    train_vec.push_back(train_tmp);
+    Matrix train_inputs(train_vec);
+    // train_inputs = Matrix(train_vec);  ? is this need move constructor(poly)
+    // std::cout << "---------Train Datas--------" << std::endl;
+    // train_inputs.show();
+
+    //Test Inputs
+    // size_t numTests { numSamples - numTrains };
+    std::vector<double> test_tmp;
+    for (size_t i { numTrains }; i < numSamples; i++) {
+        test_tmp.push_back(inputs[0][i]);
+    }
+    std::vector<std::vector<double>> test_vec;
+    test_vec.push_back(test_tmp);
+    Matrix test_inputs(test_vec);
+    // std::cout << "---------Test Datas--------" << std::endl;
+    // test_inputs.show();
+
+    // std::cout << "---------Target Values--------" << std::endl;
+    // targets.show();
+
+    // Train Targets
+    std::vector<double> train_tmp_target;
+    for (size_t i { 0 }; i < numTrains; i++) {
+        train_tmp_target.push_back(targets[0][i]);
+    }
+    std::vector<std::vector<double>> train_vec_target;
+    train_vec_target.push_back(train_tmp_target);
+    Matrix train_targets(train_vec_target);
+    // std::cout << "---------Train Targets--------" << std::endl;
+    // train_targets.show();
+
+    // Test Targets
+    std::vector<double> test_tmp_target;
+    for (size_t i { numTrains }; i < numSamples; i++) {
+        test_tmp_target.push_back(targets[0][i]);
+    }
+    std::vector<std::vector<double>> test_vec_target;
+    test_vec_target.push_back(test_tmp_target);
+    Matrix test_targets(test_vec_target);
+    // std::cout << "---------End of constructor Dataset--------" << std::endl;
+    // test_targets.show();
+}
+
+size_t Dataset::getNoOfSamples()
+{
+    size_t size { 0 };
+    // Count column for number of sample
+    size = inputs.getSize()[1];
+    inputs.show();
+    // std::cout << "Number of Samples: " << size << std::endl;
+    no_of_samples = size;
+    return no_of_samples;
+}
+
+size_t Dataset::getNoOfTrainSamples()
+{
+    size_t size { 0 };
+    size = (getNoOfSamples() * percentage) / 100.0;
+    // std::cout << "Number of Train Samples: " << size << std::endl;
+    return size;
+}
+
+size_t Dataset::getNoOfTestSamples()
+{
+    size_t size { (getNoOfSamples() - getNoOfTrainSamples()) };
+    // std::cout << "Number of Test Samples: " << size << std::endl;
+    return size;
+}
+
+size_t Dataset::getInputDim()
+{
+    input_dim = inputs.getSize()[0];
+    // std::cout << "Get Input Dim: " << input_dim << std::endl;
+    return input_dim;
+}
+
+size_t Dataset::getTargetDim()
+{
+    target_dim = targets.getSize()[0];
+    // std::cout << "Get target dim: " << target_dim << std::endl;
+    return target_dim;
+}
+
+Matrix Dataset::getInputs()
+{
+    // std::cout << "Get Inputs: " << std::endl;
+    return inputs;
+}
+
+Matrix Dataset::getTargets()
+{
+    // std::cout << "Get Targets: " << std::endl;
+    // targets.show();
+    return targets;
+}
+
+Matrix Dataset::getTrainInputs()
+{
+    // std::cout << "Get Train Inputs: " << std::endl;
+    train_inputs.show();
+    return train_inputs;
+}
+
+Matrix Dataset::getTrainTargets()
+{
+    // std::cout << "Get Train Targets: " << std::endl;
+    train_targets.show();
+    return train_targets;
+}
+
+Matrix Dataset::getTestInputs()
+{
+    // std::cout << "Get Test Inputs: " << std::endl;
+    test_inputs.show();
+
+    return test_inputs;
+}
+
+Matrix Dataset::getTestTargets()
+{
+    // std::cout << "Get Test Targets: " << std::endl;
+    return test_targets;
+}
+
+void Dataset::shuffle()
+{
+    size_t numSamples { inputs.getSize()[1] };
+
+    // Random seed
+    unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+    // unsigned seed = static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count());
+    // std::random_device rd;
+
+    //Initialize Mersenne Twister pseudo-random number generator
+    std::mt19937 gen1(seed1);
+
+    //Generate pseudo-random numbers
+    //Uniformly distributed in range(0, numSamples)
+    // srand(time(NULL));
+
+    // Inputs
+    std::uniform_int_distribution<int> dis1(0, numSamples - 1);
+    for (size_t i {}; i < numSamples; i++) {
+        size_t index = (1 + dis1(gen1)) % numSamples;
+        // std::cout << index << " ";
+        inputs[0][i] = inputs[0][index];
+    }
+    // Targets
+    for (size_t i {}; i < numSamples; i++) {
+        size_t index = (1 + dis1(gen1)) % numSamples;
+        targets[0][i] = targets[0][index];
+    }
+
+    // Train
+    size_t numTrains = (numSamples * percentage) / 100.0;
+    // // std::cout << numTrains << std::endl;
+
+    unsigned seed2 = static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count());
+    std::mt19937 gen2(seed2);
+    std::uniform_int_distribution<int> dis2(0, numTrains - 1);
+    // train_inputs.show();
+    std::cout << numTrains << std::endl;
+    std::cout << train_inputs.getSize()[0] << " " << train_inputs.getSize()[1];
+    train_inputs.show();
+    std::cout << "----------" << std::endl;
+    for (size_t i {}; i < numTrains; i++) {
+        size_t index = (1 + dis2(gen2)) % numTrains;
+        std::cout << index << " :" << train_inputs[0][i] << std::endl;
+        // train_inputs[0][i] = train_inputs[0][index];
+    }
+    train_inputs.show();
+    // for (size_t i {}; i < numTrains; i++) {
+    //     size_t index = (1 + dis2(gen2)) % numTrains;
+    //     train_targets[0][i] = train_targets[0][index];
+    // }
+
+    // size_t numTests = numSamples - numTrains;
+    // std::uniform_int_distribution<int> dis3(0, numTests - 1);
+
+    // for (size_t i {}; i < numTests; i++) {
+    //     size_t index = (1 + dis3(gen)) % numTests;
+    //     test_inputs[0][i] = test_inputs[0][index];
+    // }
+
+    // for (size_t i {}; i < numTests; i++) {
+    //     size_t index = (1 + dis3(gen)) % numTests;
+    //     test_targets[0][i] = test_targets[0][index];
+    // }
+}

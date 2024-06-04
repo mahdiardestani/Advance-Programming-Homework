@@ -1,0 +1,266 @@
+#include "neuralnet.h"
+
+NeuralNet::NeuralNet(Dataset _dataset, size_t hln,
+    const char* f1, const char* f2,
+    double _lr, size_t _max_iters, double _min_loss)
+    : dataset { _dataset }
+    , hidden_layer_neurons { hln }
+    , af1 { f1 }
+    , af2 { f2 }
+    , lr { _lr }
+    , max_iters { _max_iters }
+    , min_loss { _min_loss }
+{
+    std::cout << "Neural Net constructor: " << std::endl;
+}
+
+Matrix NeuralNet::forwardPropagate(Matrix& input)
+{
+    std::cout << "Neural Net Forward Propagate:" << std::endl;
+
+    // Layer 1
+    n1 = w1 * input + b1;
+    // std::cout << "---w1--" << std::endl;
+    // w1.show();
+
+    // std::cout << "---input--" << std::endl;
+    // input.show();
+
+    // std::cout << "---b1--" << std::endl;
+    // b1.show();
+    // std::cout << "n1" << std::endl;
+    // n1.show();
+    size_t noNerons1 { n1.getSize()[0] };
+    if (strcmp(af1, "Sigmoid") == 0) {
+        std::cout << "Layer1"
+                  << "Sigmoid" << std::endl;
+        double fTmp { 0 };
+        std::vector<double> ftmp_vec;
+        for (size_t i {}; i < noNerons1; i++) {
+            fTmp = 1.0 / (1.0 + exp(-n1[i][0]));
+            ftmp_vec.push_back(fTmp);
+        }
+        std::vector<std::vector<double>> f1_vec;
+        f1_vec.push_back(ftmp_vec);
+        Matrix f1(f1_vec);
+        a1 = f1.T();
+    }
+    // a1.show();
+    else if (strcmp(af1, "Linear") == 0) {
+        std::cout << "Layer1"
+                  << "Linear" << std::endl;
+        double fTmp { 0 };
+        std::vector<double> ftmp_vec;
+        for (size_t i {}; i < noNerons1; i++) {
+            fTmp = n1[i][0];
+            ftmp_vec.push_back(fTmp);
+        }
+        std::vector<std::vector<double>> f1_vec;
+        f1_vec.push_back(ftmp_vec);
+        Matrix f1(f1_vec);
+        a1 = f1.T();
+    }
+
+    // Layer 2
+    n2 = w2 * a1 + b2;
+    // std::cout << "---w2--" << std::endl;
+    // w2.show();
+
+    // std::cout << "---a1--" << std::endl;
+    // a1.show();
+
+    // std::cout << "---b2--" << std::endl;
+    // b2.show();
+    // n2 = tmp2;
+    size_t noNerons2 = n2.getSize()[0];
+    // std::cout << "n2" << std::endl;
+    // n2.show();
+    // std::cout << "af2:" << af2 << std::endl;
+    if (strcmp(af2, "Sigmoid") == 0) {
+        std::cout << "Layer2"
+                  << "Sigmoid" << std::endl;
+        double fTmp2 { 0 };
+        std::vector<double> ftmp_vec;
+        for (size_t i {}; i < noNerons2; i++) {
+            fTmp2 = 1.0 / (1.0 + exp(-n2[0][i]));
+            ftmp_vec.push_back(fTmp2);
+        }
+        std::vector<std::vector<double>> f2_vec;
+        f2_vec.push_back(ftmp_vec);
+        Matrix f2(f2_vec);
+        a2 = f2;
+    } else if (strcmp(af2, "Linear") == 0) {
+        std::cout << "Layer2"
+                  << "Linear" << std::endl;
+
+        double fTmp2 { 0 };
+        std::vector<double> ftmp_vec;
+        for (size_t i {}; i < noNerons2; i++) {
+            // std::cout << i << ":n2" << n2[0][i] << std::endl;
+            fTmp2 = n2[0][i];
+            ftmp_vec.push_back(fTmp2);
+        }
+        std::vector<std::vector<double>> f2_vec;
+        f2_vec.push_back(ftmp_vec);
+        Matrix f2(f2_vec);
+        // std::cout << "f2" << std::endl;
+        // f2.show();
+        a2 = f2;
+    }
+    return a2;
+}
+
+void NeuralNet::backPropagate(Matrix& input, Matrix& target)
+{
+    std::cout << "NeuralNet backpropagate" << std::endl;
+    size_t noNerons2 { n2.getSize()[0] };
+    if (strcmp(af2, "Sigmoid") == 0) {
+        std::vector<double> f2dot;
+        for (size_t i {}; i < noNerons2; i++) {
+            double ftmp = 1 / (1 + exp(-n2[0][i]));
+            double tmp = -2 * ftmp * (1 - ftmp);
+            f2dot.push_back(tmp);
+        }
+        std::vector<std::vector<double>> f2dot_vec;
+        f2dot_vec.push_back(f2dot);
+        Matrix f2 { f2dot_vec };
+        // s2 = -2 * f2 * (target - a2);
+        s2 = f2 * (target - a2);
+    } else if (strcmp(af1, "Linear") == 0) {
+        std::vector<double> f2dot;
+        for (size_t i {}; i < noNerons2; i++) {
+            f2dot.push_back(-2 * 1.0);
+        }
+        std::vector<std::vector<double>> f2dot_vec;
+        f2dot_vec.push_back(f2dot);
+        Matrix f2 { f2dot_vec };
+        s2 = f2 * (target - a2);
+    }
+
+    size_t noNerons1 = n1.getSize()[0];
+    if (strcmp(af1, "Sigmoid") == 0) {
+        std::vector<double> f1dot;
+        for (size_t i {}; i < noNerons1; i++) {
+            double ftmp = 1 / (1 + exp(-n1[i][0]));
+            double tmp = ftmp * (1 - ftmp);
+            f1dot.push_back(tmp);
+        }
+        std::vector<std::vector<double>> f1dot_vec;
+        f1dot_vec.push_back(f1dot);
+        Matrix f1 { f1dot_vec };
+        s1 = f1 * w2.T() * s2;
+    } else if (strcmp(af1, "Linear") == 0) {
+        std::vector<double> f1dot;
+        for (size_t i {}; i < noNerons1; i++) {
+            f1dot.push_back(1.0);
+        }
+        std::vector<std::vector<double>> f1dot_vec;
+        f1dot_vec.push_back(f1dot);
+        Matrix f1 { f1dot_vec };
+        s1 = f1 * w2.T() * s2;
+    }
+
+    for (size_t i {}; i < noNerons2; i++) {
+        w2[0][i] = w2[0][i] - lr * s2[0][i] * a1[i][0];
+        b2[0][i] = b2[0][i] - lr * s2[0][i];
+    }
+
+    for (size_t i {}; i < noNerons1; i++) {
+        w1[0][i] = w1[0][i] - lr * s1[0][i] * input[i][0];
+        // ?????? in chera injorie(chera input zarb shod)
+        b1[0][i] = b1[0][i] - lr * s1[0][i];
+    }
+}
+
+double NeuralNet::trainLoss()
+{
+    std::cout << "NeuralNet class trainLoss" << std::endl;
+    double totalErr { 0 };
+    size_t noNerons2 { n2.getSize()[0] };
+
+    for (size_t i {}; i < noNerons2; i++) {
+        totalErr += a2[0][i] - dataset.getTargets()[0][i];
+    }
+    return totalErr;
+}
+
+double NeuralNet::testLoss()
+{
+    std::cout << "NeuralNet class testLoss" << std::endl;
+    double totalErr { 0 };
+    size_t noNerons2 { n2.getSize()[0] };
+    for (size_t i {}; i < noNerons2; i++) {
+        totalErr += a2[0][i] - dataset.getTargets()[0][i];
+    }
+    return totalErr;
+}
+
+void NeuralNet::setW1(Matrix& w)
+{
+    std::cout << "Neural Net set W1" << std::endl;
+    w1 = w;
+}
+
+void NeuralNet::setW2(Matrix& w)
+{
+    std::cout << "Neural Net set W2" << std::endl;
+    w2 = w;
+}
+
+void NeuralNet::setB1(Matrix& b)
+{
+    std::cout << "Neural Net set B1" << std::endl;
+    b1 = b;
+}
+
+void NeuralNet::setB2(Matrix& b)
+{
+    std::cout << "Neural Net set B2" << std::endl;
+    b2 = b;
+}
+
+Matrix NeuralNet::getW1()
+{
+    std::cout << "Neural Net get W1" << std::endl;
+    return w1;
+}
+
+Matrix NeuralNet::getW2()
+{
+    std::cout << "Neural Net get W2" << std::endl;
+    return w2;
+}
+
+Matrix NeuralNet::getB1()
+{
+    std::cout << "Neural Net get b1" << std::endl;
+    return b1;
+}
+
+Matrix NeuralNet::getB2()
+{
+    std::cout << "Neural Net get b2" << std::endl;
+    return b2;
+}
+
+Result NeuralNet::fit()
+{
+    std::cout << "Fit function" << std::endl;
+    Matrix trainInput = dataset.getTrainInputs();
+    Matrix trainTarget = dataset.getTrainTargets();
+    forwardPropagate(trainInput);
+    backPropagate(trainInput, trainTarget);
+}
+
+void NeuralNet::show()
+{
+    std::cout << "Neural Net show Function" << std::endl;
+    size_t align { 23 };
+    std::cout << "Neural Network: " << std::endl
+              << std::right
+              << std::setw(align + 5) << "No of hidden neurons: " << hidden_layer_neurons << std::endl
+              << std::setw(align) << "Input dimension: " << dataset.getInputDim() << std::endl
+              << std::setw(align + 1) << "Output dimension: " << dataset.getInputDim() << std::endl
+              << std::setw(align + 12) << "Layer 1 activation function: " << af1 << std::endl
+              << std::setw(align + 12) << "Layer 2 activation function: " << af2 << std::endl;
+}
